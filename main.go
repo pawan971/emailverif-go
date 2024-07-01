@@ -10,19 +10,20 @@ import (
 )
 
 func main() {
+
+	fmt.Printf("\nLooking up the following: Domain,Has_MX,Has_SPF,SPF_Record,Has_DMARC,DMARC_Record ... ... ...\n")
 	scanner := bufio.NewScanner(os.Stdin)
-	fmt.Printf("Enter a Domain: \n")
+
+	fmt.Printf("\nEnter a Domain: \n")
 
 	for scanner.Scan() {
 		checkDomain(scanner.Text())
 	}
 
-	fmt.Printf("Looking up the following: Domain,Has_MX,Has_SPF,SPF_Record,Has_DMARC,DMARC_Record ... ... ...\n")
-
 	if error := scanner.Err(); error != nil {
 		log.Fatal("Error: could not read from input : %v\n", error)
-
 	}
+
 }
 
 func checkDomain(Domain string) {
@@ -67,7 +68,7 @@ func checkDomain(Domain string) {
 			break
 		}
 	}
-	fmt.Print("\n----------------------LOOK Results:-----------------------\n")
+	fmt.Print("\n----------------------LOOKUP Results:-----------------------\n")
 	fmt.Printf("Domain:%v\n\nHas_MX:%v\nHas_SPF:%v\nSPF_Record:%v\nHas_DMARC:%v\nDMARC_Record:%v\n", Domain, Has_MX, Has_SPF, SPF_Record, Has_DMARC, DMARC_Record)
 	fmt.Print("----------------------END---------------------------------\n\n")
 	os.Exit(0)
