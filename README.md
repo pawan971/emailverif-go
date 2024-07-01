@@ -54,16 +54,16 @@ DMARC_Record: v=DMARC1; p=reject; rua=mailto:dmarc@example.com
 
 ### 🤓 Why Use This Tool?
 
-Email Deliverability: Ensure your domains are correctly configured
-Security: Verify SPF and DMARC settings to prevent email spoofing
-Troubleshooting: Quickly diagnose email-related issues
+- Email Deliverability: Ensure your domains are correctly configured
+- Security: Verify SPF and DMARC settings to prevent email spoofing
+- Troubleshooting: Quickly diagnose email-related issues
 
 ### 🎯 Future Enhancements
 
- Batch processing of multiple domains
- Detailed explanations of each record type
- Export results to CSV or JSON
- Web interface for non-technical users
+- Batch processing of multiple domains
+- Detailed explanations of each record type
+- Export results to CSV or JSON
+- Web interface for non-technical users
 
 ### 🤝 Contributing
 Pull requests are welcome!
