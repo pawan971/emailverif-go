@@ -23,11 +23,12 @@ go get github.com/pawan971/emailverif-go
 ## 🏃‍♂️ Usage
 
 ### Run the program:
-```bash go run main.go
+```bash
+go run main.go
 ```
 ### Enter a domain when prompted:
 
-```bash
+```
 Enter a Domain: 
 example.com
 ```
@@ -39,7 +40,7 @@ SPF Records: Verify authorized email senders
 DMARC Records: Check email authentication policies
 
 ### 🖥 Sample Output
-
+```
 ----------------------LOOKUP Results:-----------------------
 Domain: example.com
 
@@ -49,6 +50,7 @@ SPF_Record: v=spf1 include:_spf.example.com ~all
 Has_DMARC: true
 DMARC_Record: v=DMARC1; p=reject; rua=mailto:dmarc@example.com
 ----------------------END---------------------------------
+```
 
 ### 🤓 Why Use This Tool?
 
@@ -65,8 +67,11 @@ Troubleshooting: Quickly diagnose email-related issues
 
 ### 🤝 Contributing
 Pull requests are welcome!
+
 ### 📜 License
 This project is licensed under the MIT License - see the LICENSE file for details.
 
+### 
 Built with reference to the instructions and guidance by - [Akhil Sharma](https://www.linkedin.com/in/akhilsails/)
+
 Remember to check your email configurations regularly! 📬
