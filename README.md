@@ -1,11 +1,11 @@
-# Domain Email Verificator
+# Domain Email Verifier
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/yourusername/domain-email-verificator)](https://goreportcard.com/report/github.com/yourusername/domain-email-verificator)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## 📧 Verify Email Domains with Ease!
 
-Ever wondered if a domain is properly set up for email communication? Look no further! The Domain Email Verificator is here to demystify the world of MX, SPF, and DMARC records.
+Ever wondered if a domain is properly set up for email communication? Look no further! The Domain Email Verifier is here to demystify the world of MX, SPF, and DMARC records.
 
 ### 🚀 Features
 
