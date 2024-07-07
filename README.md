@@ -1,6 +1,6 @@
 # Email Domain Verifier
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/yourusername/domain-email-verificator)](https://goreportcard.com/report/github.com/yourusername/domain-email-verificator)
+[![Go Report Card](https://goreportcard.com/badge/github.com/pawan971/emailverif-go)](https://goreportcard.com/report/github.com/pawan971/emailverif-go)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## 📧 Verify Email Domains with Ease!
