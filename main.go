@@ -1,10 +1,11 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
+	"html/template"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"strings"
 )
@@ -15,32 +16,57 @@ type DomainInfo struct {
 	MXRecords   []*net.MX
 	HasSPF      bool
 	SPFRecord   string
+	SPFData     []string
 	HasDMARC    bool
 	DMARCRecord string
+	DMARCData   []string
 	DKIMRecords map[string]string
+	DKIMData    map[string][]string
 	ARecords    []string
 	AAAARecords []string
 	NSRecords   []*net.NS
 	TXTRecords  []string
+	AdditionalTXT []string
 }
 
 func main() {
-	fmt.Printf("\nEnter a domain to lookup: ")
-	scanner := bufio.NewScanner(os.Stdin)
-	for scanner.Scan() {
-		domainInfo := checkDomain(scanner.Text())
-		printResults(domainInfo)
-		fmt.Printf("\nEnter another domain (or Ctrl+C to exit): ")
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
 	}
-	if err := scanner.Err(); err != nil {
-		log.Fatalf("Error reading input: %v\n", err)
+
+	http.HandleFunc("/", handler)
+	fmt.Printf("Server listening on port %s...\n", port)
+	log.Fatal(http.ListenAndServe(":"+port, nil))
+}
+
+func handler(w http.ResponseWriter, r *http.Request) {
+	tmpl, err := template.ParseFiles("templates/index.html")
+	if err != nil {
+		http.Error(w, "Could not load template: "+err.Error(), http.StatusInternalServerError)
+		return
 	}
+
+	if r.Method != http.MethodPost {
+		tmpl.Execute(w, nil)
+		return
+	}
+
+	domain := r.FormValue("domain")
+	if domain == "" {
+		tmpl.Execute(w, nil)
+		return
+	}
+
+	info := checkDomain(domain)
+	tmpl.Execute(w, info)
 }
 
 func checkDomain(domain string) DomainInfo {
 	info := DomainInfo{
 		Domain:      domain,
 		DKIMRecords: make(map[string]string),
+		DKIMData:    make(map[string][]string),
 	}
 
 	mxRecords, _ := net.LookupMX(domain)
@@ -51,20 +77,28 @@ func checkDomain(domain string) DomainInfo {
 	info.TXTRecords = txtRecords
 	for _, record := range txtRecords {
 		if strings.HasPrefix(record, "v=spf1") {
-			info.HasSPF = true
-			info.SPFRecord = record
-			break
+			if !info.HasSPF {
+				info.HasSPF = true
+				info.SPFRecord = record
+				info.SPFData = parseSPF(record)
+			}
+		} else {
+			info.AdditionalTXT = append(info.AdditionalTXT, record)
 		}
 	}
 
 	info.DMARCRecord = lookupDMARC(domain)
-	info.HasDMARC = info.DMARCRecord != ""
+	if info.DMARCRecord != "" {
+		info.HasDMARC = true
+		info.DMARCData = parseDMARC(info.DMARCRecord)
+	}
 
 	selectors := []string{"default", "google", "mail", "dkim"}
 	for _, selector := range selectors {
 		dkimRecords, err := net.LookupTXT(fmt.Sprintf("%s._domainkey.%s", selector, domain))
 		if err == nil && len(dkimRecords) > 0 {
 			info.DKIMRecords[selector] = dkimRecords[0]
+			info.DKIMData[selector] = parseDKIM(dkimRecords[0])
 		}
 	}
 
@@ -126,175 +160,87 @@ func lookupDMARC(domain string) string {
 	return ""
 }
 
-func printResults(info DomainInfo) {
-	fmt.Printf("\n----------------------LOOKUP Results for %s:-----------------------\n", info.Domain)
 
-	fmt.Printf("MX Records:\n")
-	if info.HasMX {
-		for _, mx := range info.MXRecords {
-			fmt.Printf("  - %s (Priority: %d)\n", mx.Host, mx.Pref)
-		}
-	} else {
-		fmt.Println("  No MX records found")
-	}
-
-	fmt.Printf("\nSPF Record:\n")
-	if info.HasSPF {
-		fmt.Printf("RAW: %s\n", info.SPFRecord)
-		parseSPF(info.SPFRecord)
-	} else {
-		fmt.Println("  No SPF record found")
-	}
-
-	fmt.Printf("\nDMARC Record:\n")
-	if info.HasDMARC {
-		fmt.Printf("RAW: %s\n", info.DMARCRecord)
-		parseDMARC(info.DMARCRecord)
-	} else {
-		fmt.Println("  No DMARC record found")
-	}
-
-	if len(info.DKIMRecords) > 0 {
-		fmt.Println("\nDKIM Records:")
-		for selector, record := range info.DKIMRecords {
-			fmt.Printf("Selector: %s\n", selector)
-			fmt.Printf("RAW: %s\n", record)
-			parseDKIM(record)
-		}
-	} else {
-		fmt.Println("\nNo DKIM records found")
-	}
-
-	fmt.Println("\nNameservers:")
-	if len(info.NSRecords) > 0 {
-		for _, ns := range info.NSRecords {
-			fmt.Printf("  - %s\n", ns.Host)
-		}
-	} else {
-		fmt.Println("  No NS records found")
-	}
-
-	fmt.Println("\nA Records:")
-	if len(info.ARecords) > 0 {
-		for _, record := range info.ARecords {
-			fmt.Printf("  - %s\n", record)
-		}
-	} else {
-		fmt.Println("  No A records found")
-	}
-
-	fmt.Println("\nAAAA Records:")
-	if len(info.AAAARecords) > 0 {
-		for _, record := range info.AAAARecords {
-			fmt.Printf("  - %s\n", record)
-		}
-	} else {
-		fmt.Println("  No AAAA records found")
-	}
-
-	fmt.Print("\nDo you want to see additional TXT records? (Y/N): ")
-	reader := bufio.NewReader(os.Stdin)
-	response, _ := reader.ReadString('\n')
-	response = strings.TrimSpace(strings.ToLower(response))
-
-	if response == "y" || response == "yes" {
-
-		fmt.Println("\nAdditional TXT Records:")
-		for _, record := range info.TXTRecords {
-			if !strings.HasPrefix(record, "v=spf1") && record != info.DMARCRecord {
-				fmt.Printf("  - %s\n", record)
-
-			}
-		}
-
-		// fmt.Println("\nMX Reverse DNS:")
-		// for i, ptr := range info.MXReverseDNS {
-		// 	fmt.Printf("  MX %d: %s\n", i+1, ptr)
-		// }
-
-		// if info.BIMIRecord != "" {
-		// fmt.Printf("\nBIMI Record: %s\n", info.BIMIRecord)
-		// }
-
-		// if info.TLSRPTRecord != "" {
-		// fmt.Printf("\nTLS-RPT Record: %s\n", info.TLSRPTRecord)
-		// }
-
-	}
-
-	fmt.Println("----------------------END---------------------------------")
-}
-
-func parseSPF(record string) {
+func parseSPF(record string) []string {
 	parts := strings.Fields(record)
+	var details []string
 	for _, part := range parts {
 		switch {
 		case strings.HasPrefix(part, "ip4:"):
-			fmt.Printf("  - Allowed IPv4: %s\n", strings.TrimPrefix(part, "ip4:"))
+			details = append(details, fmt.Sprintf("Allowed IPv4: %s", strings.TrimPrefix(part, "ip4:")))
 		case strings.HasPrefix(part, "ip6:"):
-			fmt.Printf("  - Allowed IPv6: %s\n", strings.TrimPrefix(part, "ip6:"))
+			details = append(details, fmt.Sprintf("Allowed IPv6: %s", strings.TrimPrefix(part, "ip6:")))
 		case strings.HasPrefix(part, "include:"):
-			fmt.Printf("  - Include domain: %s\n", strings.TrimPrefix(part, "include:"))
+			details = append(details, fmt.Sprintf("Include domain: %s", strings.TrimPrefix(part, "include:")))
 		case part == "~all":
-			fmt.Println("  - Soft fail for all other")
+			details = append(details, "Soft fail for all other")
 		case part == "-all":
-			fmt.Println("  - Hard fail for all other")
+			details = append(details, "Hard fail for all other")
 		}
 	}
+	return details
 }
 
-func parseDMARC(record string) {
+func parseDMARC(record string) []string {
 	parts := strings.Split(record, ";")
+	var details []string
 	for _, part := range parts {
 		part = strings.TrimSpace(part)
 		switch {
 		case strings.HasPrefix(part, "p="):
-			fmt.Printf("  - Policy: %s\n", strings.TrimPrefix(part, "p="))
+			details = append(details, fmt.Sprintf("Policy: %s", strings.TrimPrefix(part, "p=")))
 		case strings.HasPrefix(part, "sp="):
-			fmt.Printf("  - Subdomain Policy: %s\n", strings.TrimPrefix(part, "sp="))
+			details = append(details, fmt.Sprintf("Subdomain Policy: %s", strings.TrimPrefix(part, "sp=")))
 		case strings.HasPrefix(part, "pct="):
-			fmt.Printf("  - Percent: %s\n", strings.TrimPrefix(part, "pct="))
+			details = append(details, fmt.Sprintf("Percent: %s", strings.TrimPrefix(part, "pct=")))
 		case strings.HasPrefix(part, "rua="):
-			fmt.Printf("  - Aggregate reports: %s\n", strings.TrimPrefix(part, "rua="))
+			details = append(details, fmt.Sprintf("Aggregate reports: %s", strings.TrimPrefix(part, "rua=")))
 		case strings.HasPrefix(part, "ruf="):
-			fmt.Printf("  - Forensic reports: %s\n", strings.TrimPrefix(part, "ruf="))
+			details = append(details, fmt.Sprintf("Forensic reports: %s", strings.TrimPrefix(part, "ruf=")))
 		case strings.HasPrefix(part, "fo="):
-			fmt.Printf("  - Failure reporting options: %s\n", strings.TrimPrefix(part, "fo="))
+			details = append(details, fmt.Sprintf("Failure reporting options: %s", strings.TrimPrefix(part, "fo=")))
 		case strings.HasPrefix(part, "adkim="):
 			value := strings.TrimPrefix(part, "adkim=")
 			if value == "r" {
-				fmt.Println("  - DKIM Alignment: Relaxed")
+				details = append(details, "DKIM Alignment: Relaxed")
 			} else if value == "s" {
-				fmt.Println("  - DKIM Alignment: Strict")
+				details = append(details, "DKIM Alignment: Strict")
 			} else {
-				fmt.Printf("  - DKIM Alignment: %s\n", value)
+				details = append(details, fmt.Sprintf("DKIM Alignment: %s", value))
 			}
 		case strings.HasPrefix(part, "aspf="):
 			value := strings.TrimPrefix(part, "aspf=")
 			if value == "r" {
-				fmt.Println("  - SPF Alignment: relaxed")
+				details = append(details, "SPF Alignment: relaxed")
 			} else if value == "s" {
-				fmt.Println("  - SPF Alignment: strict")
+				details = append(details, "SPF Alignment: strict")
 			} else {
-				fmt.Printf("  - SPF Alignment: %s\n", value)
+				details = append(details, fmt.Sprintf("SPF Alignment: %s", value))
 			}
 		}
 	}
+	return details
 }
 
-func parseDKIM(record string) {
+func parseDKIM(record string) []string {
 	parts := strings.Split(record, ";")
+	var details []string
 	for _, part := range parts {
 		part = strings.TrimSpace(part)
 		switch {
 		case strings.HasPrefix(part, "v="):
-			fmt.Printf("  - Version: %s\n", strings.TrimPrefix(part, "v="))
+			details = append(details, fmt.Sprintf("Version: %s", strings.TrimPrefix(part, "v=")))
 		case strings.HasPrefix(part, "k="):
-			fmt.Printf("  - Key type: %s\n", strings.TrimPrefix(part, "k="))
+			details = append(details, fmt.Sprintf("Key type: %s", strings.TrimPrefix(part, "k=")))
 		case strings.HasPrefix(part, "p="):
-			fmt.Printf("  - Public key: %s...\n", strings.TrimPrefix(part, "p=")[:20])
+			val := strings.TrimPrefix(part, "p=")
+			if len(val) > 20 {
+				val = val[:20]
+			}
+			details = append(details, fmt.Sprintf("Public key: %s...", val))
 		case strings.HasPrefix(part, "a="):
-			fmt.Printf("  - Algorithm: %s\n", strings.TrimPrefix(part, "a="))
+			details = append(details, fmt.Sprintf("Algorithm: %s", strings.TrimPrefix(part, "a=")))
 		}
 	}
+	return details
 }

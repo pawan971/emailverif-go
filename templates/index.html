@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Domain Verifier</title>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; line-height: 1.6; }
+        h1, h2, h3 { color: #333; }
+        .container { background: #f9f9f9; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        form { margin-bottom: 20px; }
+        input[type="text"] { width: 70%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .result-section { margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px; }
+        .record-group { margin-bottom: 15px; }
+        .record-item { background: #fff; padding: 10px; margin-bottom: 5px; border: 1px solid #eee; border-radius: 4px; }
+        .details { margin-left: 20px; font-size: 0.9em; color: #555; }
+        .raw-record { font-family: monospace; background: #f0f0f0; padding: 5px; border-radius: 4px; display: block; margin-bottom: 5px; word-break: break-all; }
+        .not-found { color: #999; font-style: italic; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📧 Email Domain Verifier</h1>
+        <form method="POST" action="/">
+            <input type="text" name="domain" placeholder="Enter a domain (e.g., example.com)" required value="{{if .Domain}}{{.Domain}}{{end}}">
+            <button type="submit">Verify Domain</button>
+        </form>
+
+        {{if .Domain}}
+        <div class="result-section">
+            <h2>Results for {{.Domain}}</h2>
+
+            <div class="record-group">
+                <h3>MX Records</h3>
+                {{if .HasMX}}
+                    {{range .MXRecords}}
+                    <div class="record-item">
+                        <strong>{{.Host}}</strong> (Priority: {{.Pref}})
+                    </div>
+                    {{end}}
+                {{else}}
+                    <div class="not-found">No MX records found</div>
+                {{end}}
+            </div>
+
+            <div class="record-group">
+                <h3>SPF Record</h3>
+                {{if .HasSPF}}
+                    <div class="record-item">
+                        <span class="raw-record">{{.SPFRecord}}</span>
+                        <div class="details">
+                            <ul>
+                            {{range .SPFData}}
+                                <li>{{.}}</li>
+                            {{end}}
+                            </ul>
+                        </div>
+                    </div>
+                {{else}}
+                    <div class="not-found">No SPF record found</div>
+                {{end}}
+            </div>
+
+            <div class="record-group">
+                <h3>DMARC Record</h3>
+                {{if .HasDMARC}}
+                    <div class="record-item">
+                        <span class="raw-record">{{.DMARCRecord}}</span>
+                        <div class="details">
+                            <ul>
+                            {{range .DMARCData}}
+                                <li>{{.}}</li>
+                            {{end}}
+                            </ul>
+                        </div>
+                    </div>
+                {{else}}
+                    <div class="not-found">No DMARC record found</div>
+                {{end}}
+            </div>
+
+            <div class="record-group">
+                <h3>DKIM Records</h3>
+                {{if .DKIMRecords}}
+                    {{range $selector, $record := .DKIMRecords}}
+                    <div class="record-item">
+                        <strong>Selector: {{$selector}}</strong>
+                        <span class="raw-record">{{$record}}</span>
+                        <div class="details">
+                            <ul>
+                            {{$details := index $.DKIMData $selector}}
+                            {{range $details}}
+                                <li>{{.}}</li>
+                            {{end}}
+                            </ul>
+                        </div>
+                    </div>
+                    {{end}}
+                {{else}}
+                    <div class="not-found">No DKIM records found (checked default selectors)</div>
+                {{end}}
+            </div>
+
+            <div class="record-group">
+                <h3>Nameservers</h3>
+                 {{if .NSRecords}}
+                    {{range .NSRecords}}
+                    <div class="record-item">{{.Host}}</div>
+                    {{end}}
+                {{else}}
+                    <div class="not-found">No NS records found</div>
+                {{end}}
+            </div>
+
+            <div class="record-group">
+                <h3>A Records</h3>
+                {{if .ARecords}}
+                    {{range .ARecords}}
+                    <div class="record-item">{{.}}</div>
+                    {{end}}
+                {{else}}
+                    <div class="not-found">No A records found</div>
+                {{end}}
+            </div>
+
+             <div class="record-group">
+                <h3>AAAA Records</h3>
+                {{if .AAAARecords}}
+                    {{range .AAAARecords}}
+                    <div class="record-item">{{.}}</div>
+                    {{end}}
+                {{else}}
+                    <div class="not-found">No AAAA records found</div>
+                {{end}}
+            </div>
+
+            <div class="record-group">
+                <details>
+                    <summary>Show Additional TXT Records</summary>
+                    {{range .AdditionalTXT}}
+                         <div class="record-item" style="margin-top: 5px;">{{.}}</div>
+                    {{else}}
+                         <div class="not-found">No additional TXT records found</div>
+                    {{end}}
+                </details>
+            </div>
+
+        </div>
+        {{end}}
+    </div>
+</body>
+</html>
