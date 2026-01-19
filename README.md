@@ -1,11 +1,11 @@
-# Email Domain Verifier
+# Email Domain Verifier Web App
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/pawan971/emailverif-go)](https://goreportcard.com/report/github.com/pawan971/emailverif-go)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## 📧 Verify Email Domains with Ease!
 
-Ever wondered if a domain is properly set up for email communication? Look no further! The Domain Email Verifier is here to demystify the world of MX, SPF, DMARC, and more.
+Ever wondered if a domain is properly set up for email communication? Look no further! The Domain Email Verifier is a web application that demystifies the world of MX, SPF, DMARC, and more.
 
 ### 🚀 Features
 
@@ -14,26 +14,56 @@ Ever wondered if a domain is properly set up for email communication? Look no fu
 - Investigate DMARC (Domain-based Message Authentication, Reporting, and Conformance) policies
 - Lookup DKIM (DomainKeys Identified Mail) records
 - Retrieve A, AAAA, NS, and TXT records
-- User-friendly command-line interface
+- Simple and clean Web Interface
 - Lightning-fast Go implementation
 
-### 🛠 Installation
+### 🛠 Installation & Running Locally
 
-```bash
-go get github.com/pawan971/emailverif-go
-```
-## 🏃‍♂️ Usage
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/pawan971/emailverif-go.git
+   cd emailverif-go
+   ```
 
-### Run the program:
-```bash
-go run main.go
-```
-### Enter a domain when prompted:
+2. **Run the web server:**
+   ```bash
+   go run main.go
+   ```
 
-```
-Enter a Domain: 
-example.com
-```
+3. **Access the app:**
+   Open your browser and navigate to `http://localhost:8080`.
+
+### 🐳 Running with Docker
+
+You can easily containerize and run the application using Docker.
+
+1. **Build the Docker image:**
+   ```bash
+   docker build -t emailverif .
+   ```
+
+2. **Run the container:**
+   ```bash
+   docker run -p 8080:8080 emailverif
+   ```
+
+3. **Access the app:**
+   Visit `http://localhost:8080` in your browser.
+
+### 🌐 Hosting on the Internet
+
+To host this application on the internet, you can use any cloud provider that supports Docker or Go applications.
+
+#### Deploying to Fly.io (Example)
+1. Install `flyctl`.
+2. Run `fly launch` in the project directory.
+3. Follow the prompts to deploy.
+
+#### Deploying to Render
+1. Connect your GitHub repository to Render.
+2. Choose "Web Service".
+3. Select "Docker" as the runtime.
+4. Render will automatically build using the `Dockerfile`.
 
 ### 🔍 What It Checks
 
@@ -46,64 +76,11 @@ AAAA Records: IPv6 addresses associated with the domain
 NS Records: Nameserver records for the domain
 TXT Records: All TXT records, including SPF and DMARC
 
-### 🖥 Sample Output
-```
-----------------------LOOKUP Results for example.com:-----------------------
-MX Records:
-  - mx1.example.com (Priority: 10)
-  - mx2.example.com (Priority: 20)
-
-SPF Record:
-RAW: v=spf1 include:_spf.example.com ~all
-  - Allowed IPv4: _spf.example.com
-  - Soft fail for all other
-
-DMARC Record:
-RAW: v=DMARC1; p=reject; rua=mailto:dmarc@example.com
-  - Policy: reject
-  - Aggregate reports: mailto:dmarc@example.com
-
-DKIM Records:
-Selector: default
-RAW: v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBA...
-  - Version: DKIM1
-  - Key type: rsa
-  - Public key: MIGfMA0GCSqGSIb3DQEBA...
-
-Nameservers:
-  - ns1.example.com
-  - ns2.example.com
-
-A Records:
-  - 192.0.2.1
-
-AAAA Records:
-  - 2001:db8::1
-
-Do you want to see additional TXT records? (Y/N): Y
-
-Additional TXT Records:
-  - google-site-verification=abcdefg12345
-
-----------------------END---------------------------------
-
-```
-
 ### 🤓 Why Use This Tool?
 
 - Email Deliverability: Ensure your domains are correctly configured
 - Security: Verify SPF and DMARC settings to prevent email spoofing
 - Troubleshooting: Quickly diagnose email-related issues
-
-### 🎯 Future Enhancements
-
-- Batch processing of multiple domains
-- Export results to CSV or JSON
-- Web interface for non-technical users
-- Various services associated
-- Reverse DNS Lookup for MX Servers
-- BIMI Records
-- TLS-RPT Record
 
 ### 🤝 Contributing
 Pull requests are welcome!
